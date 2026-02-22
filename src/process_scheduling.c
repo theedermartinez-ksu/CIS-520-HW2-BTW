@@ -53,6 +53,13 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 // \return a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
 dyn_array_t *load_process_control_blocks(const char *input_file) 
 {
+	char cwd[PATH_MAX];
+	
+	if(getcwd(cwd,sizeof(cwd)) != NULL){
+		printf("Current working directory: %s\n",cwd);
+	}else{
+		perror("getcwd failed");
+	}
 	// read from an input file (pcb.bin)
 	int fd = open(input_file, O_RDONLY);
 	if(fd == -1){
