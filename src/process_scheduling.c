@@ -56,6 +56,7 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 	// read from an input file (pcb.bin)
 	int fd = open(input_file, O_RDONLY);
 	if(fd == -1){
+		perror("open failed");
 		return NULL;
 	}
 	// read the binary file into data, first line gives the number of PCB blocks while the rest are the values
@@ -63,11 +64,13 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 	ssize_t first = read(fd, &count, sizeof(uint32_t));
 	// 0 for EOF, -1 for error, else returns number of bytes read
 	if(first <=0){
+		perror("read failed");
 		close(fd);
 		return NULL;
 	}
 	ProcessControlBlock_t *array = malloc(count*sizeof(ProcessControlBlock_t));
 	if(array==NULL){
+		perror("array allocation failed");
 		close(fd);
 		return NULL;
 	}
@@ -79,6 +82,7 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 		|| read(fd, &data.arrival, sizeof(uint32_t))!= sizeof(uint32_t)){
 			close(fd);
 			free(array);
+			perror("read failed for pcb block");
 			return NULL;
 		}
 		// delete later, printing results of PCB
