@@ -45,15 +45,15 @@ class GradeEnvironment : public testing::Environment
 // dyn_array_t *load_process_control_blocks(const char *input_file);
 TEST(load_process_blocks, DoesNotPassReturnsNULL)
 {
-	EXPECT_EQ(load_process_control_blocks("./beans.bi"), NULL);
-	EXPECT_EQ(load_process_control_blocks(""), NULL);
+	EXPECT_EQ(load_process_control_blocks("./beans.bi"), nullptr );
+	EXPECT_EQ(load_process_control_blocks(""), nullptr);
 
 }
 
 TEST(load_process_blocks, PassesALL)
 {
-	dyn_array_t* result = load_process_control_blocks("./pcb.bin");
-	EXPECT_NE(result, NULL);
+	dyn_array_t* result = load_process_control_blocks("pcb.bin");
+	EXPECT_NE(result, nullptr);
 
 }
 // set up two dyn arrays. One of unorganized values, one iwth the expected values
@@ -93,15 +93,12 @@ TEST(PCBGOOD,DoesPass)
 	dyn_array_push_back(arrayUnsorted, &pcb2);
 	dyn_array_push_back(arrayUnsorted, &pcb3);
 	//----- sorted--//
-	ScheduleResut_t  arraySorted{};
+	ScheduleResult_t  arraySorted{};
 	EXPECT_TRUE(first_come_first_serve(arrayUnsorted, &arraySorted));
 
 	EXPECT_FLOAT_EQ(arraySorted.average_waiting_time, 1.0f);
 	EXPECT_FLOAT_EQ(arraySorted.average_turnaround_time, 5.666667f);
-	EXPECT_EQ(arraySorted.total_run_time, 14);
-
-
-
+	EXPECT_EQ(arraySorted.total_run_time, 14UL);
 
 }
 
@@ -110,7 +107,7 @@ TEST(PCBBAD,NOTPASS)
 	dyn_array_t *arrayUnsorted = dyn_array_create(0, sizeof
 		(ProcessControlBlock_t), NULL);
 
-	ScheduleResut_t arraySorted{};
+	ScheduleResult_t arraySorted{};
 	EXPECT_FALSE(first_come_first_serve(arrayUnsorted, &arraySorted));
 
 }
