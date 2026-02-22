@@ -10,7 +10,6 @@
 // You might find this handy.  I put it around unused parameters, but you should
 // remove it before you submit. Just allows things to compile initially.
 #define UNUSED(x) (void)(x)
-#define DYN_MAX_CAPACITY (((size_t) 1) << ((sizeof(size_t) << 3) - 8))
 
 // private function
 void virtual_cpu(ProcessControlBlock_t *process_control_block) 
@@ -59,33 +58,36 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 	if(fd == -1){
 		return NULL;
 	}
-	// read the binary file into data
+	// read the binary file into data, first line gives the number of PCB blocks while the rest are the values
 	ssize_t bytes_read;
-	// = read(fd, &data, sizeof(ProcessControlBlock_t));
-	ProcessControlBlock_t data;
-    ProcessControlBlock_t array[DYN_MAX_CAPACITY];
-	int count = 0;
-	while(bytes_read = read(fd, &data, sizeof(ProcessControlBlock_t)) > 0){
-		array[count] = data;
-		count++;
+	uint32_t count;
+	ssize_t first = read(fd, &count, sizeof(uint32_t));
+	// 0 for EOF, -1 for error, else returns number of bytes read
+	if(first <=0){
+		close(fd);
+		return NULL;
+	}
+	ProcessControlBlock_t array[count];
+	for(uint32_t i =0;i<count;i++){
+		ProcessControlBlock_t data;
+		if(read(fd, &data.remaining_burst_time, sizeof(uint32_t))!= sizeof(uint32_t)
+		|| read(fd, &data.priority, sizeof(uint32_t))!= sizeof(uint32_t)
+		|| read(fd, &data.arrival, sizeof(uint32_t))!= sizeof(uint32_t)){
+			close(fd);
+			return NULL;
+		}
 		// delete later, printing results of PCB
 		printf("remaining burst time: %d",data.remaining_burst_time);
 		printf("priority: %d",data.priority);
 		printf("arrival: %d",data.arrival);
-		// error in reading files
-		if(bytes_read == -1|| bytes_read != sizeof(ProcessControlBlock_t)){
-			return NULL;
-		}
+		
+		array[i] = data;
 	}
 	close(fd);
 	// error in reading file
-	dyn_array_t *populated = dyn_array_import(&data,count,sizeof(ProcessControlBlock_t),NULL);
-	free(&data);
+	dyn_array_t *populated = dyn_array_import(&array,count,sizeof(ProcessControlBlock_t),NULL);
 	free(&array);
 	return populated;
-	// dyn_array_create(capacity, data_type_size, destruct func)
-	//dyn_array_import(data,);
-	//UNUSED(input_file);
 
 }
 
