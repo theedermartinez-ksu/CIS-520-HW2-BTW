@@ -73,6 +73,7 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 	}
 	for(uint32_t i =0;i<count;i++){
 		ProcessControlBlock_t data;
+		data.started = false;
 		if(read(fd, &data.remaining_burst_time, sizeof(uint32_t))!= sizeof(uint32_t)
 		|| read(fd, &data.priority, sizeof(uint32_t))!= sizeof(uint32_t)
 		|| read(fd, &data.arrival, sizeof(uint32_t))!= sizeof(uint32_t)){
@@ -89,7 +90,7 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 	}
 	close(fd);
 	// error in reading file
-	dyn_array_t *populated = dyn_array_import(&array,count,sizeof(ProcessControlBlock_t),NULL);
+	dyn_array_t *populated = dyn_array_import(array,count,sizeof(ProcessControlBlock_t),NULL);
 	free(array);
 	return populated;
 
