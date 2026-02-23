@@ -38,6 +38,8 @@ target_sources(
         dyn_array
         PRIVATE
             src/dyn_array.c
+            src/process_scheduling.c
+
 )
 
 # link the dyn_array library we compiled against our analysis executable
