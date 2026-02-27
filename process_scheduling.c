@@ -12,7 +12,7 @@
 #define UNUSED(x) (void)(x)
 
 // private function
-void virtual_cpu(ProcessControlBlock_t *process_control_block) 
+void virtual_cpu(ProcessControlBlock_t *process_control_block)
 {
 	// decrement the burst time of the pcb
 	--process_control_block->remaining_burst_time;
@@ -30,14 +30,14 @@ int arrivalcompare(const void *x, const void *y)
 		return 0;
 	}
 	if(thing1->arrival < thing2->arrival) {
-		return -1;	
+		return -1;
 	}
 	return 1;
 }
 
-bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result) 
+bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result)
 {
-	//Error Checking	
+	//Error Checking
 	if (ready_queue == NULL || result == NULL || dyn_array_at(ready_queue,0) == NULL) {
 		return false;
 	}
@@ -68,21 +68,33 @@ bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result)
 	return true;
 }
 
-bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
+//shortest job first
+bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
+{
+	//Error Checking
+	if (ready_queue == NULL || result == NULL || dyn_array_at(ready_queue,0) == NULL) {
+		return false;
+	}
+	// skip the sorting
+	int i = 0;
+	//Sum of all wait times. Initialized to zero
+	int wsum = 0;
+	//Sum of all turn around times. Initialized to zero
+	int tatsum = 0;
+
+
+
+	return false;
+}
+
+bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result)
 {
 	UNUSED(ready_queue);
 	UNUSED(result);
 	return false;
 }
 
-bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result) 
-{
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
-}
-
-bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum) 
+bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum)
 {
 	UNUSED(ready_queue);
 	UNUSED(result);
@@ -94,7 +106,7 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 // for N number of PCB entries stored in the file
 // \param input_file the file containing the PCB burst times
 // \return a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
-dyn_array_t *load_process_control_blocks(const char *input_file) 
+dyn_array_t *load_process_control_blocks(const char *input_file)
 {
 
 	// read from an input file (pcb.bin)
@@ -129,7 +141,7 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 			perror("read failed for pcb block");
 			return NULL;
 		}
-		
+
 		array[i] = data;
 	}
 	close(fd);
@@ -140,7 +152,7 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 
 }
 
-bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
+bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 {
 	UNUSED(ready_queue);
 	UNUSED(result);
