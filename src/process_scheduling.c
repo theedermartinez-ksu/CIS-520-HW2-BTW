@@ -18,11 +18,77 @@ void virtual_cpu(ProcessControlBlock_t *process_control_block)
 	--process_control_block->remaining_burst_time;
 }
 
+// Compares the arrival time of two process control blocks
+// \param x is the first integer to compare
+// \param y is the second integer to compare
+// \return 0 if x == y return -1 if x < y and return 1 if x > y
+int arrivalcompare(const void *x, const void *y)
+{
+	const ProcessControlBlock_t *thing1 = (const ProcessControlBlock_t *)x;
+	const ProcessControlBlock_t *thing2 = (const ProcessControlBlock_t *)y;
+	if(thing1->arrival == thing2->arrival){
+		return 0;
+	}
+	if(thing1->arrival < thing2->arrival) {
+		return -1;	
+	}
+	return 1;
+}
+
+// Compares the arrival time and priority time of two process control blocks
+// \param x is the first integer to compare
+// \param y is the second integer to compare
+// \return 0 if x == y return -1 if x < y and return 1 if x > y
+int priority_arrival_compare(const void *x, const void *y)
+{
+	const ProcessControlBlock_t *thing1 = (const ProcessControlBlock_t *)x;
+	const ProcessControlBlock_t *thing2 = (const ProcessControlBlock_t *)y;
+	if(thing1->arrival == thing2->arrival){
+		if(thing1->priority == thing2-> priority){
+			return 0;
+		}
+		if(thing1-> priority < thing2->priority){
+			return -1;
+		}
+		return 1;
+	}
+	if(thing1->arrival < thing2->arrival) {
+		return -1;	
+	}
+	return 1;
+}
+
 bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result) 
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
+	//Error Checking	
+	if (ready_queue == NULL || result == NULL || dyn_array_at(ready_queue,0) == NULL) {
+		return false;
+	}
+	//Sort the dyn array based on arrival times
+	dyn_array_sort(ready_queue, arrivalcompare);
+	//Number of PCB blocks in ready queue
+	int i = 0;
+	//Sum of all wait times. Initialized to zero
+	int wsum = 0;
+	//Sum of all turn around times. Initialized to zero
+	int tatsum = 0;
+	//result total_run_time set to zero
+	result->total_run_time = 0;
+	//Iterate through dyn_array
+	while(dyn_array_at(ready_queue, 0 ) != NULL) {
+		//Sums result run time from previous run time (Sum of BT)
+		result->total_run_time = result->total_run_time + ((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->remaining_burst_time;
+		//Calculates and then sums turn around time (TATSUM = TATSUM + CT - AT).
+		tatsum = tatsum + (result->total_run_time - ((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->arrival);
+		//Calculates and then sums wait times (WSUM = WSUM + (CT - AT) - BT).
+		wsum = wsum + ((result->total_run_time - ((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->arrival) - ((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->remaining_burst_time);
+		i++;
+		dyn_array_pop_front(ready_queue);
+	}
+	//Calculates averages based on number of times looped.
+	result->average_waiting_time = wsum / (float)(i);
+	result->average_turnaround_time = tatsum / (float)(i);
+	return true;
 }
 
 bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
@@ -32,11 +98,42 @@ bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 	return false;
 }
 
+
+// Runs the non-preemptive Priority algorithm over the incoming ready_queue
+// \param ready queue a dyn_array of type ProcessControlBlock_t that contain be up to N elements
+// \param result used for shortest job first stat tracking \ref ScheduleResult_t
+// \return true if function ran successful else false for an error
+// There is no guarantee that the passed dyn_array_t will be the result of your implementation of load_process_control_blocks
 bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result) 
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
+	//Error Checking	
+	if (ready_queue == NULL || result == NULL || dyn_array_at(ready_queue,0) == NULL) {
+		return false;
+	}
+	dyn_array_sort(ready_queue,prioritycompare);
+	//Counter for loop initialized to zero
+	int i = 0;
+	//Sum of all wait times. Initialized to zero
+	int wsum = 0;
+	//Sum of all turn around times. Initialized to zero
+	int tatsum = 0;
+	//result total_run_time set to zero
+	result->total_run_time = 0;
+	//Iterate through dyn_array
+	while(dyn_array_at(ready_queue, i ) != NULL) {
+		//Sums result run time from previous run time (Sum of BT)
+		result->total_run_time = result->total_run_time + ((ProcessControlBlock_t *)dyn_array_at(ready_queue,i))->remaining_burst_time;
+		//Calculates and then sums turn around time (TATSUM = TATSUM + CT - AT).
+		tatsum = tatsum + (result->total_run_time - ((ProcessControlBlock_t *)dyn_array_at(ready_queue,i))->arrival);
+		//Calculates and then sums wait times (WSUM = WSUM + (CT - AT) - BT).
+		wsum = wsum + ((result->total_run_time - ((ProcessControlBlock_t *)dyn_array_at(ready_queue,i))->arrival) - ((ProcessControlBlock_t *)dyn_array_at(ready_queue,i))->remaining_burst_time);
+		i++;
+	}
+	//Calculates averages based on number of times looped.
+	result->average_waiting_time = wsum / (float)(i);
+	result->average_turnaround_time = tatsum / (float)(i);
+
+	return true;
 }
 
 bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum) 
@@ -53,13 +150,7 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 // \return a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
 dyn_array_t *load_process_control_blocks(const char *input_file) 
 {
-	char cwd[PATH_MAX];
-	
-	if(getcwd(cwd,sizeof(cwd)) != NULL){
-		printf("Current working directory: %s\n",cwd);
-	}else{
-		perror("getcwd failed");
-	}
+
 	// read from an input file (pcb.bin)
 	int fd = open(input_file, O_RDONLY);
 	if(fd == -1){
@@ -75,12 +166,14 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 		close(fd);
 		return NULL;
 	}
+	// allocate a temporary array to hold process control blocks before importing to dynarray
 	ProcessControlBlock_t *array = malloc(count*sizeof(ProcessControlBlock_t));
 	if(array==NULL){
 		perror("array allocation failed");
 		close(fd);
 		return NULL;
 	}
+	// for each PCB block, read in the binary to the variables
 	for(uint32_t i =0;i<count;i++){
 		ProcessControlBlock_t data;
 		data.started = false;
@@ -92,16 +185,12 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 			perror("read failed for pcb block");
 			return NULL;
 		}
-		// delete later, printing results of PCB
-		printf("remaining burst time: %d",data.remaining_burst_time);
-		printf("priority: %d",data.priority);
-		printf("arrival: %d",data.arrival);
 		
 		array[i] = data;
 	}
 	close(fd);
-	// error in reading file
 	dyn_array_t *populated = dyn_array_import(array,count,sizeof(ProcessControlBlock_t),NULL);
+	// free temporary
 	free(array);
 	return populated;
 
