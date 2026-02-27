@@ -121,7 +121,7 @@ bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 	{
 		int min_index = -1;
 		size_t min_burstTime = 1000000; // large number
-		for (size_t i = 0; i<dyn_array_size(ready_queue); i++)
+		for (size_t i = 0; i<dyn_array_size(ready_queue); i++)//loop and find small
 		{
 			ProcessControlBlock_t* pcb = (ProcessControlBlock_t*) dyn_array_at(ready_queue,i);//current evaluation
 
@@ -136,7 +136,7 @@ bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 		}
 
 		// at this point we have the index then we pass that along
-		if (min_index == -1)
+		if (min_index == -1)// not dice
 		{
 			//??? doo ntohing ??
 			//set to zero (first item)
@@ -162,7 +162,7 @@ bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 		}
 	}
 
-
+	// ipdate result at the end
 	result->total_run_time = current_time;
 	result->average_waiting_time = waitTimes / (float)countItem;
 	result->average_turnaround_time = turnTimes / (float)countItem;
@@ -268,9 +268,76 @@ dyn_array_t *load_process_control_blocks(const char *input_file)
 
 }
 
+// preemtive (interruption good)
+// The process that has the least amoount of time runs until
+// it finishes or a new process with a shorter remaining time arrive.
+// This ensures the fastest finishing process always gets priority
 bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
+	//Error Checking
+	if (ready_queue == NULL || result == NULL || dyn_array_at(ready_queue,0) == NULL)
+	{
+		return false;
+	}
+	//fix arrival time
+	dyn_array_sort(ready_queue,arrivalcompare); // compare by arrival
+
+	size_t countItem = dyn_array_size(ready_queue);
+	size_t completed = 0;
+	int current_time = 0;
+
+
+	result->total_waiting_time = 0;
+	result->total_turnaround_time = 0;
+	result->total_run_time = 0;
+
+	while (completed < countItem)
+	{
+		//---for loop
+		int smallestIndex = -1;
+		int smallest_time = 1000000;
+		//find the items with the smallest remaining
+		for (size_t i = 0 ; i < countItem; i++)
+		{
+			//get current count (
+			ProcessControlBlock_t* pcb = (ProcessControlBlock_t*) dyn_array_at(ready_queue,i);//current evaluation
+			int cur_smallest = pcb->remaining_burst_time;
+			if (cur_smallest < smallest_time && cur_smallest > 0 && pcb->arrival_time <= current_time)
+			{
+				smallest_time = cur_smallest;
+				smallestIndex = i;
+			}
+
+		}
+		//idling
+		if (smallestIndex == -1)
+		{
+			current_time ++;
+			continue;
+		}
+		//process it
+		ProcessControlBlock_t* currentPCB = (ProcessControlBlock_t*) dyn_array_at(ready_queue,smallestIndex);//current evaluation
+		currentPCB->remaining_burst_time = currentPCB->remaining_burst_time  - 1;
+		current_time++;
+
+		//check if the curent pcb is done
+		if (currentPCB->remaining_burst_time == 0)
+		{
+			completed++;
+			int turnaround = current_time - (currentPCB ->arrival_time);
+			int waiting = turnaround - (currentPCB ->burst_time);
+
+			result->total_turnaround_time += turnaround;
+			result->total_waiting_time += waiting;
+		}
+
+	}
+
+	result->total_run_time = current_time;
+	//Calculates averages based on number of times looped.
+	result->average_turnaround_time = (float) result->total_turnaround_time / countItem;
+	result->average_waiting_time = (float)result->total_waiting_time / countItem;
+
+
+	return true;
 }
