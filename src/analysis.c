@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include "dyn_array.h"
 #include "processing_scheduling.h"
 
@@ -70,17 +71,25 @@ int main(int argc, char **argv)
 		printf("SRT total run time: %ld\n",result->total_run_time);
 
 		// read from an input file (pcb.bin)
-		int fd = open("../README.md", O_WRONLY);
+		int fd = open("../README.md", O_WRONLY | O_APPEND);
 		if(fd == -1){
 			free(result);
 			perror("open failed");	
-			return NULL;
+			return EXIT_FAILURE;
 		}
-		ssize_t bytes_written = dprintf(fd, "SRT average waiting time: %f\nSRT average turn around time: %f\nSRT total run time: %ld\n", result->average_waiting_time,result->average_turnaround_time,result->total_run_time);
+		// formatted string to buffer
+		char buffer[256];
+		int len = snprintf(buffer, sizeof(buffer), 
+			"SRT average waiting time: %f\nSRT average turn around time: %f\nSRT total run time: %ld\n", 
+			result->average_waiting_time, 
+			result->average_turnaround_time, 
+			result->total_run_time);
+		// write to the file
+		int bytes_written = write(fd,buffer,len);
 		// if error in writing, returns negative, otherwise it returns number of bytes written
 		if (bytes_written < 0) {
 			close(fd);
-			free(result);
+			free(result);	
 			return EXIT_FAILURE;
 		}
 		//Free resources
