@@ -1,99 +1,76 @@
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
+#ifndef PROCESS_SCHEDULING_H
+#define PROCESS_SCHEDULING_H
+
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "dyn_array.h"
-#include "processing_scheduling.h"
 
+	typedef struct
+	{
+		uint32_t remaining_burst_time;// the remaining burst of the pcb
+		uint32_t priority;				// The priority of the task
+		uint32_t arrival;					// Time the process arrived in the ready queue
+		bool started;						// If it has been activated on virtual CPU
+	} 
+	ProcessControlBlock_t;
 
-// You might find this handy.  I put it around unused parameters, but you should
-// remove it before you submit. Just allows things to compile initially.
-#define UNUSED(x) (void)(x)
+	typedef struct
+	{
+		float average_waiting_time;	// the average waiting time in the ready queue until first schedue on the cpu
+		float average_turnaround_time;// the average completion time of the PCBs
+		unsigned long total_run_time;	// the total time to process all the PCBs in the ready queue
+	} 
+	ScheduleResult_t;
 
-// private function
-void virtual_cpu(ProcessControlBlock_t *process_control_block)
-{
-	// decrement the burst time of the pcb
-	--process_control_block->remaining_burst_time;
+	// Reads the PCB values from the binary file into ProcessControlBlock_t
+	// for N number of PCB entries stored in the file
+	// \param input_file the file containing the PCB burst times
+	// \return a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
+	dyn_array_t *load_process_control_blocks(const char *input_file);
+
+	// Runs the First Come First Served Process Scheduling algorithm over the incoming ready_queue
+	// \param ready queue a dyn_array of type ProcessControlBlock_t
+	// that contain be up to N elements
+	// \param result used for first come first served stat tracking \ref ScheduleResult_t
+	// \return true if function ran successful else false for an error
+	// There is no guarantee that the passed dyn_array_t will be the result of your implementation of load_process_control_blocks
+	bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result);
+
+	// Runs the Shortest Job First Scheduling algorithm over the incoming ready_queue
+	// \param ready queue a dyn_array of type ProcessControlBlock_t that contain be up to N elements
+	// \param result used for shortest job first stat tracking \ref ScheduleResult_t
+	// \return true if function ran successful else false for an error
+	// There is no guarantee that the passed dyn_array_t will be the result of your implementation of load_process_control_blocks
+	bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result);
+
+	// Runs the non-preemptive Priority algorithm over the incoming ready_queue
+	// \param ready queue a dyn_array of type ProcessControlBlock_t that contain be up to N elements
+	// \param result used for shortest job first stat tracking \ref ScheduleResult_t
+	// \return true if function ran successful else false for an error
+	// There is no guarantee that the passed dyn_array_t will be the result of your implementation of load_process_control_blocks
+	bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result);
+
+	// Runs the Round Robin Process Scheduling algorithm over the incoming ready_queue
+	// \param ready queue a dyn_array of type ProcessControlBlock_t that contain be up to N elements
+	// \param result used for round robin stat tracking \ref ScheduleResult_t
+	// \param the quantum
+	// \return true if function ran successful else false for an error
+	// There is no guarantee that the passed dyn_array_t will be the result of your implementation of load_process_control_blocks
+	bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum);
+
+	// Runs the preemptive Shortest Remaining Time First Process Scheduling algorithm over the incoming ready_queue
+	// \param ready queue a dyn_array of type ProcessControlBlock_t that contain be up to N elements
+	// \param result used for shortest job first stat tracking \ref ScheduleResult_t
+	// \return true if function ran successful else false for an error
+	// There is no guarantee that the passed dyn_array_t will be the result of your implementation of load_process_control_blocks
+	bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result);
+
+#ifdef __cplusplus
 }
-
-bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result)
-{
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
-}
-
-bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
-{
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
-}
-
-bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result)
-{
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
-}
-
-bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum)
-{
-	UNUSED(ready_queue);
-	UNUSED(result);
-	UNUSED(quantum);
-	return false;
-}
-
-// Reads the PCB values from the binary file into ProcessControlBlock_t
-// for N number of PCB entries stored in the file
-// \param input_file the file containing the PCB burst times
-// \return a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
-dyn_array_t *load_process_control_blocks(const char *input_file)
-{
-	// read from an input file (pcb.bin)
-	int fd = open(input_file, O_RDONLY);
-	if(fd == -1){
-		return NULL;
-	}
-	// read the binary file into data, first line gives the number of PCB blocks while the rest are the values
-	ssize_t bytes_read;
-	uint32_t count;
-	ssize_t first = read(fd, &count, sizeof(uint32_t));
-	// 0 for EOF, -1 for error, else returns number of bytes read
-	if(first <=0){
-		close(fd);
-		return NULL;
-	}
-	ProcessControlBlock_t array[count];
-	for(uint32_t i =0;i<count;i++){
-		ProcessControlBlock_t data;
-		if(read(fd, &data.remaining_burst_time, sizeof(uint32_t))!= sizeof(uint32_t)
-		|| read(fd, &data.priority, sizeof(uint32_t))!= sizeof(uint32_t)
-		|| read(fd, &data.arrival, sizeof(uint32_t))!= sizeof(uint32_t)){
-			close(fd);
-			return NULL;
-		}
-		// delete later, printing results of PCB
-		printf("remaining burst time: %d",data.remaining_burst_time);
-		printf("priority: %d",data.priority);
-		printf("arrival: %d",data.arrival);
-
-		array[i] = data;
-	}
-	close(fd);
-	// error in reading file
-	dyn_array_t *populated = dyn_array_import(&array,count,sizeof(ProcessControlBlock_t),NULL);
-	free(&array);
-	return populated;
-
-}
-
-bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
-{
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
-}
+#endif
+#endif
