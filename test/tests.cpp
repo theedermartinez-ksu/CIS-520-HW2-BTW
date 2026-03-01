@@ -52,7 +52,7 @@ TEST(load_process_blocks, DoesNotPassReturnsNULL)
 
 TEST(load_process_blocks, PassesALL)
 {
-	dyn_array_t* result = load_process_control_blocks("pcb.bin");
+	dyn_array_t* result = load_process_control_blocks("../pcb.bin");
 	EXPECT_NE(result, nullptr);
 
 }
@@ -62,29 +62,30 @@ TEST(load_process_blocks, PassesALL)
 // check that the unoganized one is empty and the other one is equal to the one that is ordered
 // bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result);
 
-TEST(PCBGOOD,DoesPass)
+//FCFS TESTS
+TEST(FCFSPCBGOOD,DoesPass)
 {
 	ProcessControlBlock_t pcb1 =
 	{
-		.remaining_burst_time = 10,
+		.remaining_burst_time = 5,
 		.priority = 10,
-		.arrival = 5,
+		.arrival = 2,
 		.started = false
 	};
 
 	ProcessControlBlock_t pcb2 =
 	{
-		.remaining_burst_time = 1,
+		.remaining_burst_time = 3,
 		.priority = 1,
-		.arrival = 3,
+		.arrival = 0,
 		.started = false
 	};
 
 	ProcessControlBlock_t pcb3 =
 	{
-		.remaining_burst_time = 3,
+		.remaining_burst_time = 4,
 		.priority = 3,
-		.arrival = 2,
+		.arrival = 4,
 		.started = false
 	};
 
@@ -98,9 +99,9 @@ TEST(PCBGOOD,DoesPass)
 	ScheduleResult_t  arraySorted{};
 	EXPECT_TRUE(first_come_first_serve(arrayUnsorted, &arraySorted));
 
-	EXPECT_FLOAT_EQ(arraySorted.average_waiting_time, 1.0f);
+	EXPECT_FLOAT_EQ(arraySorted.average_waiting_time, 1.666667f);
 	EXPECT_FLOAT_EQ(arraySorted.average_turnaround_time, 5.666667f);
-	EXPECT_EQ(arraySorted.total_run_time, 14UL);
+	EXPECT_EQ(arraySorted.total_run_time, 12UL);
 
 }
 
@@ -118,25 +119,25 @@ TEST(ROUND_ROB,PASS)
 {
 	ProcessControlBlock_t pcb1 =
 	{
-		.remaining_burst_time = 10,
+		.remaining_burst_time = 5,
 		.priority = 10,
-		.arrival = 5,
+		.arrival = 0,
 		.started = false
 	};
 
 	ProcessControlBlock_t pcb2 =
 	{
-		.remaining_burst_time = 1,
+		.remaining_burst_time = 2,
 		.priority = 1,
-		.arrival = 3,
+		.arrival = 4,
 		.started = false
 	};
 
 	ProcessControlBlock_t pcb3 =
 	{
-		.remaining_burst_time = 3,
+		.remaining_burst_time = 4,
 		.priority = 3,
-		.arrival = 2,
+		.arrival = 5,
 		.started = false
 	};
 
@@ -147,13 +148,18 @@ TEST(ROUND_ROB,PASS)
 	dyn_array_push_back(arrayUnsorted, &pcb2);
 	dyn_array_push_back(arrayUnsorted, &pcb3);
 
-	ScheduleResult_t result = {0};
+	ScheduleResult_t result = 
+	{
+		.average_waiting_time = 0,
+		.average_turnaround_time = 0,
+		.total_run_time = 0
+	};
 	size_t quant = 2;
-	EXPECT_TRUE(round_robin(arrayUnsorted,result,quant));
+	EXPECT_TRUE(round_robin(arrayUnsorted,&result,quant));
 
-	EXPECT_EQ(result.total_run_time, 14UL);
-	EXPECT_FLOAT_EQ(result.average_turnaround_time, 4.666667f);
-	EXPECT_FLOAT_EQ(result.average_waiting_time, 2.0f);
+	EXPECT_EQ(result.total_run_time, 11UL);
+	EXPECT_FLOAT_EQ(result.average_turnaround_time, 5.0f);
+	EXPECT_FLOAT_EQ(result.average_waiting_time, 1.3f);
 
 }
 
@@ -200,9 +206,13 @@ TEST(PRIORITY_TEST,PASS)
 	dyn_array_push_back(arrayUnsorted, &pcb2);
 	dyn_array_push_back(arrayUnsorted, &pcb3);
 
-	ScheduleResult_t result = {0};
-	size_t quant = 2;
-	EXPECT_TRUE(priority(arrayUnsorted,result,quant));
+	ScheduleResult_t result = 
+	{
+		.average_waiting_time = 0,
+		.average_turnaround_time = 0,
+		.total_run_time = 0
+	};
+	EXPECT_TRUE(priority(arrayUnsorted,&result));
 
 	EXPECT_EQ(result.total_run_time, 12UL);
 	EXPECT_FLOAT_EQ(result.average_turnaround_time, 6.3333f);
