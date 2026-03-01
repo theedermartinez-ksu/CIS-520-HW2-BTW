@@ -164,7 +164,7 @@ TEST(ROUND_ROB,FAIL)
 	EXPECT_FALSE(round_robin(arrayUnsorted, &arraySorted));
 }
 
-TEST(SHORTEST_JOB,PASS){
+TEST(shortest_job_first,Valid){
 	// pass in good inputs, expecting function to return true and have the expected result values filled
 	ScheduleResult_t result = {0};
 	ProcessControlBlock_t pcb1 =
@@ -199,8 +199,10 @@ TEST(SHORTEST_JOB,PASS){
 	EXPECT_EQ(result.total_run_time, 14UL);
 	EXPECT_FLOAT_EQ(result.average_turnaround_time, (float)(17/3));
 	EXPECT_FLOAT_EQ(result.average_waiting_time, 1.0f);
+
+	free(arrayUnsorted);
 }
-TEST(SHORTEST_JOB,NULLINPUTS){
+TEST(shortest_job_first,NullInputs){
 	// invalid ready_queue input, valid result, expected false
 	ScheduleResult_t result = {0};
 	EXPECT_FALSE(shortest_job_first(NULL,result));
@@ -235,9 +237,24 @@ TEST(SHORTEST_JOB,NULLINPUTS){
 	dyn_array_push_back(arrayUnsorted, &pcb3);
 	EXPECT_FALSE(shortest_job_first(arraySorted,NULL));
 
+	free(arrayUnsorted);
+
+}
+TEST(shortest_job_first, BadInputs){
+	// dyn array containing non-pcb block elements, expect false
+	int a = 0;
+	int b = 2;
+	int c = 8;
+	dyn_array_t *arrayUnsorted = dyn_array_create(3, sizeof(int), NULL);
+	dyn_array_push_back(arrayUnsorted, &a);
+	dyn_array_push_back(arrayUnsorted, &b);
+	dyn_array_push_back(arrayUnsorted, &c);
+	ScheduleResult_t result = {0};
+	EXPECT_FALSE(shortest_job_first(arraySorted,result));
+
 }
 
-TEST(SHORTEST_REMAINING, BADINPUTS){
+TEST(shortest_remaining_time_first, BadInputs){
 	// dyn array containing non-pcb block elements, expect false
 	int a = 0;
 	int b = 2;
@@ -249,9 +266,11 @@ TEST(SHORTEST_REMAINING, BADINPUTS){
 	ScheduleResult_t result = {0};
 	EXPECT_FALSE(shortest_remaining_time_first(arraySorted,result));
 
+	free(arrayUnsorted);
+
 }
 
-TEST(SHORTEST_REMAINING,NULLINPUTS){
+TEST(shortest_remaining_time_first,NullInputs){
 	// invalid ready_queue input, expected false
 	ScheduleResult_t result = {0};
 	EXPECT_FALSE(shortest_remaining_time_first(NULL,result));
@@ -286,8 +305,10 @@ TEST(SHORTEST_REMAINING,NULLINPUTS){
 	dyn_array_push_back(arrayUnsorted, &pcb3);
 	EXPECT_FALSE(shortest_remaining_time_first(arraySorted,NULL));
 
+	free(arrayUnsorted);
+
 }
-TEST(SHORTEST_REMAINING,PASS){
+TEST(shortest_remaining_time_first,Valid){
 	// pass in good inputs, expecting function to return true and have the expected result values filled
 	ScheduleResult_t result = {0};
 	ProcessControlBlock_t pcb1 =
@@ -325,8 +346,61 @@ TEST(SHORTEST_REMAINING,PASS){
 	EXPECT_FLOAT_EQ(result.average_turnaround_time, (float)(16/3));
 	// (1+0+1)/3
 	EXPECT_FLOAT_EQ(result.average_waiting_time, (float)(2/3));
+
+	free(arrayUnsorted);
+}
+//PRIORITY TESTS
+TEST(PRIORITY_TEST,PASS)
+{
+	ProcessControlBlock_t pcb1 =
+	{
+		.remaining_burst_time = 4,
+		.priority = 2,
+		.arrival = 0,
+		.started = false
+	};
+
+	ProcessControlBlock_t pcb2 =
+	{
+		.remaining_burst_time = 2,
+		.priority = 1,
+		.arrival = 1,
+		.started = false
+	};
+
+	ProcessControlBlock_t pcb3 =
+	{
+		.remaining_burst_time = 6,
+		.priority = 3,
+		.arrival = 2,
+		.started = false
+	};
+
+	dyn_array_t *arrayUnsorted = dyn_array_create(3, sizeof
+		(ProcessControlBlock_t), NULL);
+
+	dyn_array_push_back(arrayUnsorted, &pcb1);
+	dyn_array_push_back(arrayUnsorted, &pcb2);
+	dyn_array_push_back(arrayUnsorted, &pcb3);
+
+	ScheduleResult_t result = {0};
+	size_t quant = 2;
+	EXPECT_TRUE(priority(arrayUnsorted,result,quant));
+
+	EXPECT_EQ(result.total_run_time, 12UL);
+	EXPECT_FLOAT_EQ(result.average_turnaround_time, 6.3333f);
+	EXPECT_FLOAT_EQ(result.average_waiting_time, 2.33f);
+
 }
 
+TEST(PRIORITY_TEST,FAIL)
+{
+	dyn_array_t *arrayUnsorted = dyn_array_create(0, sizeof
+		(ProcessControlBlock_t), NULL);
+
+	ScheduleResult_t arraySorted{};
+	EXPECT_FALSE(priority(arrayUnsorted, &arraySorted));
+}
 
 int main(int argc, char **argv)
 {
