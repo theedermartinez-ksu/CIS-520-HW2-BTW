@@ -182,7 +182,7 @@ bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result)
 	if (ready_queue == NULL || result == NULL || dyn_array_at(ready_queue,0) == NULL) {
 		return false;
 	}
-	dyn_array_sort(ready_queue,prioritycompare);
+	dyn_array_sort(ready_queue,priority_arrival_compare);
 	//Counter for loop initialized to zero
 	int i = 0;
 	//Sum of all wait times. Initialized to zero
@@ -210,10 +210,64 @@ bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result)
 
 bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum)
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	UNUSED(quantum);
-	return false;
+	//Error Checking	
+	if (ready_queue == NULL || result == NULL || dyn_array_at(ready_queue,0) == NULL) {
+		return false;
+	}
+	//Sort the dyn array based on arrival times
+	dyn_array_sort(ready_queue, arrivalcompare);
+	//Set the result total_run_time to zero (total_run_time will funciton as a counter).
+	result->total_run_time = 0;
+
+	//Get total_burst_time for all remaining_burst_times before decrementing we are calculating avg wait time through sums
+	//Initialize all variables to zero
+	uint32_t total_burst_time = 0;
+	uint32_t total_turn_around_time = 0;
+	size_t starting_queue_size = dyn_array_size(ready_queue);
+
+	for(size_t i = 0; i < dyn_array_size(ready_queue); i++) {
+		total_burst_time += ((ProcessControlBlock_t *)dyn_array_at(ready_queue, i))->remaining_burst_time;
+	}
+
+
+	while(dyn_array_at(ready_queue,0) != NULL) {
+		//Check to see if the current process has arrived and can be ran it has arrived (arrivaltime <= total_run_time) if not then idle
+		if(((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->arrival <= result->total_run_time) {
+		//Runs the current process on the virtual PC for time quanta if possible
+			for (size_t i = 0; i < quantum; i++){
+				//Check each iteration to ensure that burst time is not zero
+				if(((ProcessControlBlock_t *)dyn_array_at(ready_queue , 0))->remaining_burst_time > 0) {
+					virtual_cpu((ProcessControlBlock_t *)dyn_array_at(ready_queue,0));
+					result->total_run_time++;
+				}
+				//Check that remaining_burst_time is not zero. If it is zero break here and alter the ready_queue accordningly
+				if(((ProcessControlBlock_t *)dyn_array_at(ready_queue, 0))->remaining_burst_time == 0) {
+					break;
+				}
+			}
+			//Checks to cycle to next process (if remaining_burst_time == zero remove it from the ready queue if the remaining_burst_time > 0 send it to the back of the ready_queue)
+			if(((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->remaining_burst_time > 0) {
+				dyn_array_push_back(ready_queue, (ProcessControlBlock_t *)dyn_array_at(ready_queue, 0));
+				dyn_array_pop_front(ready_queue);
+			}
+			//This check goes after the first check so that we don't pop first and always have a remaining_burst_time greater than zero. THIS CHECK SHOULD ONLY RUN WHEN A PCB IS FINISHED.
+			if(((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->remaining_burst_time == 0) {
+				//Before we pop we add calc turnaround time and add to sum to calc wait time
+				total_turn_around_time += (result->total_run_time - ((ProcessControlBlock_t *)dyn_array_at(ready_queue,0))->arrival);
+
+				dyn_array_pop_front(ready_queue);
+			}
+		}
+		//idle this adds to total run time
+		else {
+			result->total_run_time++;
+		}
+	}
+	//Calculate totals
+	uint32_t total_wait_time = total_turn_around_time - total_burst_time;
+	result->average_waiting_time =  total_wait_time / (float)starting_queue_size;
+	result->average_turnaround_time = total_turn_around_time / (float)starting_queue_size;
+	return true;
 }
 
 // Reads the PCB values from the binary file into ProcessControlBlock_t
@@ -284,11 +338,11 @@ bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *r
 
 	size_t countItem = dyn_array_size(ready_queue);
 	size_t completed = 0;
-	int current_time = 0;
+	uint32_t current_time = 0;
 
 
-	result->total_waiting_time = 0;
-	result->total_turnaround_time = 0;
+	result->average_waiting_time = 0;
+	result->average_turnaround_time = 0;
 	result->total_run_time = 0;
 
 	while (completed < countItem)
@@ -302,7 +356,7 @@ bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *r
 			//get current count (
 			ProcessControlBlock_t* pcb = (ProcessControlBlock_t*) dyn_array_at(ready_queue,i);//current evaluation
 			int cur_smallest = pcb->remaining_burst_time;
-			if (cur_smallest < smallest_time && cur_smallest > 0 && pcb->arrival_time <= current_time)
+			if (cur_smallest < smallest_time && cur_smallest > 0 && pcb->arrival <= current_time)
 			{
 				smallest_time = cur_smallest;
 				smallestIndex = i;
@@ -324,19 +378,19 @@ bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *r
 		if (currentPCB->remaining_burst_time == 0)
 		{
 			completed++;
-			int turnaround = current_time - (currentPCB ->arrival_time);
-			int waiting = turnaround - (currentPCB ->burst_time);
+			int turnaround = current_time - (currentPCB ->arrival);
+			int waiting = turnaround - (currentPCB ->remaining_burst_time);
 
-			result->total_turnaround_time += turnaround;
-			result->total_waiting_time += waiting;
+			result->average_turnaround_time += turnaround;
+			result->average_waiting_time += waiting;
 		}
 
 	}
 
 	result->total_run_time = current_time;
 	//Calculates averages based on number of times looped.
-	result->average_turnaround_time = (float) result->total_turnaround_time / countItem;
-	result->average_waiting_time = (float)result->total_waiting_time / countItem;
+	result->average_turnaround_time = (float) result->average_turnaround_time / countItem;
+	result->average_waiting_time = (float)result->average_waiting_time / countItem;
 
 
 	return true;

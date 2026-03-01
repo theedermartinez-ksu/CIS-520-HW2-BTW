@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 		//Run FCFS
-		shortest_job_first(ready_queue , result , 2);
+		shortest_job_first(ready_queue , result);
 		//Print
 		printf("SJF average waiting time: %f\n", result->average_waiting_time);
 		printf("SJF average turn around time: %f\n",result->average_turnaround_time);
