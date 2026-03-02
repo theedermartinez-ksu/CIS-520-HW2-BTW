@@ -64,25 +64,25 @@ TEST(PCBGOOD,DoesPass)
 {
 	ProcessControlBlock_t pcb1 =
 	{
-		.remaining_burst_time = 5,
+		.remaining_burst_time = 10,
 		.priority = 10,
-		.arrival = 2,
+		.arrival = 5,
 		.started = false
 	};
 
 	ProcessControlBlock_t pcb2 =
 	{
-		.remaining_burst_time = 3,
+		.remaining_burst_time = 1,
 		.priority = 1,
-		.arrival = 0,
+		.arrival = 3,
 		.started = false
 	};
 
 	ProcessControlBlock_t pcb3 =
 	{
-		.remaining_burst_time = 4,
+		.remaining_burst_time = 3,
 		.priority = 3,
-		.arrival = 4,
+		.arrival = 2,
 		.started = false
 	};
 
@@ -96,9 +96,9 @@ TEST(PCBGOOD,DoesPass)
 	ScheduleResult_t  arraySorted{};
 	EXPECT_TRUE(first_come_first_serve(arrayUnsorted, &arraySorted));
 
-	EXPECT_FLOAT_EQ(arraySorted.average_waiting_time, 1.666667f);
+	EXPECT_FLOAT_EQ(arraySorted.average_waiting_time, 1.0f);
 	EXPECT_FLOAT_EQ(arraySorted.average_turnaround_time, 5.666667f);
-	EXPECT_EQ(arraySorted.total_run_time, 12UL);
+	EXPECT_EQ(arraySorted.total_run_time, 14UL);
 
 }
 
@@ -112,6 +112,66 @@ TEST(PCBBAD,NOTPASS)
 
 }
 
+TEST(ROUND_ROB,PASS)
+{
+	ProcessControlBlock_t pcb1 =
+	{
+		.remaining_burst_time = 10,
+		.priority = 10,
+		.arrival = 5,
+		.started = false
+	};
+
+	ProcessControlBlock_t pcb2 =
+	{
+		.remaining_burst_time = 1,
+		.priority = 1,
+		.arrival = 3,
+		.started = false
+	};
+
+	ProcessControlBlock_t pcb3 =
+	{
+		.remaining_burst_time = 3,
+		.priority = 3,
+		.arrival = 2,
+		.started = false
+	};
+
+	dyn_array_t *arrayUnsorted = dyn_array_create(3, sizeof
+		(ProcessControlBlock_t), NULL);
+
+	dyn_array_push_back(arrayUnsorted, &pcb1);
+	dyn_array_push_back(arrayUnsorted, &pcb2);
+	dyn_array_push_back(arrayUnsorted, &pcb3);
+
+	ScheduleResult_t result = 
+	{
+		.average_waiting_time = 0,
+		.average_turnaround_time = 0,
+		.total_run_time = 0
+	};
+	size_t quant = 2;
+	EXPECT_TRUE(round_robin(arrayUnsorted,result,quant));
+
+	EXPECT_EQ(result.total_run_time, 14UL);
+	EXPECT_FLOAT_EQ(result.average_turnaround_time, 4.666667f);
+	EXPECT_FLOAT_EQ(result.average_waiting_time, 2.0f);
+
+}
+
+TEST(ROUND_ROB,FAIL)
+{
+	dyn_array_t *arrayUnsorted = dyn_array_create(0, sizeof
+		(ProcessControlBlock_t), NULL);
+
+	ScheduleResult_t arraySorted{};
+	EXPECT_FALSE(round_robin(arrayUnsorted, &arraySorted));
+}
+
+TEST(SHORTEST_JOB,BADINPUT){
+	EXPECTEQ(, nullptr)
+}
 
 int main(int argc, char **argv)
 {
