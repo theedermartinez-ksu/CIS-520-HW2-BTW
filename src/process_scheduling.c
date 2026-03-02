@@ -410,12 +410,9 @@ bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *r
 		}
 		//process it
 		ProcessControlBlock_t* currentPCB = (ProcessControlBlock_t*) dyn_array_at(ready_queue,smallestIndex);//current evaluation
-		
-		//currentPCB->remaining_burst_time = currentPCB->remaining_burst_time  - 1;
 		current_time++;
 
-
-			virtual_cpu(currentPCB);
+	    virtual_cpu(currentPCB);
 		
 
 		//check if the curent pcb is done
