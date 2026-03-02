@@ -66,9 +66,9 @@ int main(int argc, char **argv)
 	free(ready_queue);
 	if(success){
 		//Print
-		printf("SRT average waiting time: %f\n", result->average_waiting_time);
-		printf("SRT average turn around time: %f\n",result->average_turnaround_time);
-		printf("SRT total run time: %ld\n",result->total_run_time);
+		printf("%s average waiting time: %f\n", argv[2],result->average_waiting_time);
+		printf("%s average turn around time: %f\n",argv[2],result->average_turnaround_time);
+		printf("%s total run time: %ld\n",argv[2],result->total_run_time);
 
 		// read from an input file (pcb.bin)
 		int fd = open("../README.md", O_WRONLY | O_APPEND);
@@ -80,10 +80,10 @@ int main(int argc, char **argv)
 		// formatted string to buffer
 		char buffer[256];
 		int len = snprintf(buffer, sizeof(buffer), 
-			"SRT average waiting time: %f\nSRT average turn around time: %f\nSRT total run time: %ld\n", 
-			result->average_waiting_time, 
-			result->average_turnaround_time, 
-			result->total_run_time);
+			"%s average waiting time: %f\n%s average turn around time: %f\n%s total run time: %ld\n", 
+			argv[2],result->average_waiting_time, 
+			argv[2],result->average_turnaround_time, 
+			argv[2],result->total_run_time);
 		// write to the file
 		int bytes_written = write(fd,buffer,len);
 		// if error in writing, returns negative, otherwise it returns number of bytes written
