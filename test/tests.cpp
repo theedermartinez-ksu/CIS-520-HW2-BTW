@@ -54,6 +54,7 @@ TEST(load_process_blocks, PassesALL)
 {
 	dyn_array_t* result = load_process_control_blocks("../pcb.bin");
 	EXPECT_NE(result, nullptr);
+	dyn_array_destroy(result);
 
 }
 // set up two dyn arrays. One of unorganized values, one iwth the expected values
@@ -100,6 +101,8 @@ TEST(first_come_first_serve,DoesPass)
 	EXPECT_FLOAT_EQ(arraySorted.average_turnaround_time, 5.666667f);
 	EXPECT_EQ(arraySorted.total_run_time, 12UL);
 
+	dyn_array_destroy(arrayUnsorted);
+
 }
 
 TEST(first_come_first_serve,NOTPASS)
@@ -110,6 +113,7 @@ TEST(first_come_first_serve,NOTPASS)
 	ScheduleResult_t arraySorted{};
 	EXPECT_FALSE(first_come_first_serve(arrayUnsorted, &arraySorted));
 
+	dyn_array_destroy(arrayUnsorted);
 }
 
 TEST(ROUND_ROB,PASS)
@@ -158,6 +162,7 @@ TEST(ROUND_ROB,PASS)
 	EXPECT_FLOAT_EQ(result.average_turnaround_time, 4.666667f);
 	EXPECT_FLOAT_EQ(result.average_waiting_time, 2.0f);
 
+	dyn_array_destroy(arrayUnsorted);
 }
 
 TEST(ROUND_ROB,FAIL)
@@ -210,7 +215,7 @@ TEST(shortest_job_first,Valid){
 	EXPECT_FLOAT_EQ(result.average_turnaround_time, 8.6f);
 	EXPECT_FLOAT_EQ(result.average_waiting_time, 3.0f);
 
-	free(arrayUnsorted);
+	dyn_array_destroy(arrayUnsorted);
 }
 TEST(shortest_job_first,NullInputs){
 	// invalid ready_queue input, valid result, expected false
@@ -252,7 +257,7 @@ TEST(shortest_job_first,NullInputs){
 	dyn_array_push_back(arrayUnsorted, &pcb3);
 	EXPECT_FALSE(shortest_job_first(arrayUnsorted,NULL));
 
-	free(arrayUnsorted);
+	dyn_array_destroy(arrayUnsorted);
 
 }
 TEST(shortest_job_first, BadInputs){
@@ -272,6 +277,7 @@ TEST(shortest_job_first, BadInputs){
 	};
 	EXPECT_FALSE(shortest_job_first(arrayUnsorted,&result));
 
+	dyn_array_destroy(arrayUnsorted);
 }
 
 TEST(shortest_remaining_time_first, BadInputs){
@@ -291,7 +297,7 @@ TEST(shortest_remaining_time_first, BadInputs){
 	};
 	EXPECT_FALSE(shortest_remaining_time_first(arrayUnsorted,&result));
 
-	free(arrayUnsorted);
+	dyn_array_destroy(arrayUnsorted);
 
 }
 
@@ -335,7 +341,7 @@ TEST(shortest_remaining_time_first,NullInputs){
 	dyn_array_push_back(arrayUnsorted, &pcb3);
 	EXPECT_FALSE(shortest_remaining_time_first(arrayUnsorted,NULL));
 
-	free(arrayUnsorted);
+	dyn_array_destroy(arrayUnsorted);
 
 }
 TEST(shortest_remaining_time_first,Valid){
@@ -382,7 +388,7 @@ TEST(shortest_remaining_time_first,Valid){
 	// (3+0+7)/3
 	EXPECT_FLOAT_EQ(result.average_waiting_time, 3.3333333f);
 
-	free(arrayUnsorted);
+	dyn_array_destroy(arrayUnsorted);
 }
 //PRIORITY TESTS
 TEST(PRIORITY_TEST,PASS)
@@ -431,6 +437,8 @@ TEST(PRIORITY_TEST,PASS)
 	EXPECT_FLOAT_EQ(result.average_turnaround_time, 6.333333f);
 	EXPECT_FLOAT_EQ(result.average_waiting_time, 2.333333f);
 
+
+	dyn_array_destroy(arrayUnsorted);
 }
 
 TEST(PRIORITY_TEST,FAIL)
@@ -440,6 +448,8 @@ TEST(PRIORITY_TEST,FAIL)
 
 	ScheduleResult_t arraySorted{};
 	EXPECT_FALSE(priority(arrayUnsorted, &arraySorted));
+
+	dyn_array_destroy(arrayUnsorted);
 }
 
 int main(int argc, char **argv)
